@@ -1,0 +1,101 @@
+<?php
+
+/**
+ * @file
+ * Provides SumoMe tools integration
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function sumome_menu() {
+  $items = array();
+
+  $items['admin/config/services/sumome'] = array(
+    'title' => 'SumoMe Tools Integration',
+    'description' => 'Set up your SumoMe tools.',
+    'access callback' => 'user_access',
+    'access arguments' => array('sumome_admin'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sumome_settings_form'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+function sumome_settings_form($form, &$form_state) {
+  $form = array();
+
+  $site_id = variable_get('sumome_site_id', '');
+
+  $form['sumome_site_id'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Data Sumo Site ID'),
+    '#description' => t('Enter the entire string of numbers and letters after data-sumo-site-id= in the HTML Code you
+    were givin on the SumoMe.com website. Do not include the beginning and ending quotes.'),
+    '#default_value' => $site_id,
+  );
+
+  $form['sumome_markup'] = array(
+    '#markup' => '<strong>How to find your Data Sumo Site ID:</strong>
+    <ul>
+    <li>Follow the Instructions on the SumoMe.com website for Standard Websites to Get the HTML Code </li>
+    <li>Copy and Paste the string inside the data-sumo-site-id="" attribute.</li>
+    </ul>
+    <br /><img src="/' . drupal_get_path('module', 'sumome') . '/SumoMe.jpg" alt="Image showing were to get the string.">',
+  );
+  
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_page_build().
+ *
+ * Used to move code away from hook_init() per note from
+ * https://twitter.com/davereid/status/294554866649542657
+ */
+function sumome_page_build(&$page) {
+  // Assume that we should enable the script.
+  $use_sumome = TRUE;
+  // If there's no site ID stored: disable the script.
+  $site_id = variable_get('sumome_site_id');
+  if (!$site_id) {
+    $use_sumome = FALSE;
+  }
+  // If this is in the admin* hierarchy: disable the script.
+  if (drupal_match_path(request_path(), 'admin*')) {
+    $use_sumome = FALSE;
+  }
+  // If this user is in a role with the "Exclude SumoMe script" permission.
+  if (user_access('sumome_exclude')) {
+    $use_sumome = FALSE;
+  }
+  // (Additional filtering conditions can be added here)
+
+  // If the script should be used, add it.
+  if ($use_sumome) {
+    $element = array(
+      '#type' => 'markup',
+      '#markup' => '<script type="text/javascript" src="//load.sumome.com/" data-sumo-site-id="' . $site_id . '" async="async"></script>',
+    );
+    drupal_add_html_head($element, 'sumome_script_tag');
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function sumome_permission() {
+  return array(
+    'sumome_exclude' =>  array(
+      'title' => t('Exclude SumoMe script'),
+      'description' => t('The SumoMe JavaScript will not be applied for users in these roles.'),
+    ),
+    'sumome_admin' => array(
+      'title' => t('Administer SumoMe configuration'),
+      'description' => t('Allowed to administer the SumoMe module settings.'),
+    ),
+  );
+}

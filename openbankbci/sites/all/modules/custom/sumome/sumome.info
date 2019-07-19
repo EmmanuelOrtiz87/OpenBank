@@ -1,0 +1,14 @@
+name = SumoMe Tools Integration
+description = Provides an easy way to get the SumoMe tools up and running on your Drupal site.
+package = Other
+core = 7.x
+version = 7.x-1.x
+
+configure = admin/config/services/sumome
+
+; Information added by Drupal.org packaging script on 2017-05-12
+version = "7.x-1.0"
+core = "7.x"
+project = "sumome"
+datestamp = "1494626588"
+
